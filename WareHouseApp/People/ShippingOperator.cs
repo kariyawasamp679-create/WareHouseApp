@@ -1,36 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace WareHouseApp.People
+﻿namespace WareHouseApp.People
 {
+    /// <summary>Day-to-day staff account created through Sign Up. Cannot manage employees.</summary>
     public class ShippingOperator : Person
     {
-        
-        public override bool Login(string username, string password)
-        {
-            return false;
-        }
-        public override void ChangePassword(string newPassword)
-        {
-            this.Password = newPassword;
-        }
-        public override void Logout(int userID)
-        {
-
-        }
-
-        public int LoadStocks()
-        {
-            int stocks = 0;
-            return stocks;
-        }
-        public int ShipStocks()
-        {
-            int stocks = 0;
-            return stocks;
-        }
+        public override string Role { get { return "Operator"; } }
+        public override bool CanManageEmployees { get { return false; } }
     }
 }
