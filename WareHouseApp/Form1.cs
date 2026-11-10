@@ -19,6 +19,11 @@ namespace WareHouseApp
         {
             InitializeComponent();
             AcceptButton = butLogin;
+
+            // Field captions (the starter design had none).
+            var captionFont = new System.Drawing.Font("Microsoft Sans Serif", 12F);
+            Controls.Add(new Label { Text = "Username", Font = captionFont, AutoSize = true, Location = new System.Drawing.Point(303, 138) });
+            Controls.Add(new Label { Text = "Password", Font = captionFont, AutoSize = true, Location = new System.Drawing.Point(303, 241) });
         }
 
         private void panel1_Paint(object sender, PaintEventArgs e) { }

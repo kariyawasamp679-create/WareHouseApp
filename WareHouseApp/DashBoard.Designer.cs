@@ -161,7 +161,7 @@ namespace WareHouseApp
             // DashBoard
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.None;
             this.ClientSize = new System.Drawing.Size(1095, 595);
             this.Controls.Add(this.mainDash1);
             this.Controls.Add(this.panel2);
