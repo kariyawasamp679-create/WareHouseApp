@@ -19,6 +19,7 @@ namespace WareHouseApp.Data
         private static readonly string[] CandidateServers =
         {
             @"(localdb)\MSSQLLocalDB",
+            @"(localdb)\WarehouseLocal",
             @".\SQLEXPRESS",
             @"."
         };
