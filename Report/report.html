@@ -1,0 +1,73 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>WareHouseApp Report</title>
+<style>
+@page{size:A4;margin:18mm}
+body{font-family:Calibri,Arial,sans-serif;font-size:11pt;line-height:1.4;color:#222}
+h1{color:#058f12;margin-bottom:0}h2{color:#2a4fb5;border-bottom:1px solid #ccc;padding-bottom:2px;margin-top:18px}
+.sub{color:#666;margin-top:2px}
+.diagram{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin:10px 0}
+.box{border:1.5px solid #2a4fb5;border-radius:4px;min-width:150px;font-size:9pt;background:#f4f7ff}
+.box b{display:block;background:#2a4fb5;color:#fff;padding:2px 6px;text-align:center}
+.box i{display:block;padding:2px 6px;font-style:normal}
+.abs b{background:#6b7280}
+.layer{border:1.5px solid #058f12;background:#f1fbf2;padding:5px 12px;text-align:center;width:60%;margin:0 auto}
+.arrow{text-align:center;color:#058f12;font-size:14pt;line-height:1}
+.ph{border:1.5px dashed #999;padding:26px;text-align:center;color:#888;margin:8px 0;font-size:10pt}
+table{border-collapse:collapse;font-size:10pt}td,th{border:1px solid #bbb;padding:3px 8px}
+</style></head><body>
+<h1>WareHouseApp – Inventory Management System</h1>
+<p class="sub">CS107.3 Object Oriented Programming with C# (Repeat) · Coursework report</p>
+
+<h2>1. Problem statement</h2>
+<p>Small and medium warehouses often track stock, customers and staff on paper or in scattered spreadsheets. This leads to stock-outs that are noticed too late, duplicated or inconsistent customer records, and no control over who may view or change sensitive data such as employee salaries.</p>
+<p>WareHouseApp is a Windows Forms desktop application, built in C# on .NET Framework 4.7.2, that keeps inventory, customers and employees in one SQL Server database behind a login screen. Validation prevents bad data, low-stock alerts on the home dashboard show what needs reordering, and role-based access protects employee records. Together these give staff one reliable, searchable source of truth.</p>
+
+<h2>2. Requirements</h2>
+<p><b>Target users:</b> warehouse administrators (full access) and shipping operators (day-to-day stock and customer work, no access to employee records).</p>
+<table>
+<tr><th>Feature</th><th>Why it is included</th></tr>
+<tr><td>Sign up &amp; login</td><td>Only authorised staff may use the system; passwords are stored as salted PBKDF2 hashes, never in plain text. A default admin is created on first run.</td></tr>
+<tr><td>Inventory management</td><td>Add, edit, delete and search items with quantity, price, category, location and reorder level; low stock is flagged on the dashboard.</td></tr>
+<tr><td>Customer management</td><td>Maintain customer contact and company details with phone/email validation.</td></tr>
+<tr><td>Employee management</td><td>Maintain staff records (NIC, position, salary, hire date); restricted to Admin.</td></tr>
+</table>
+<p><b>Non-functional:</b> every feature is persisted in SQL Server; all user input is validated; all failures are caught and shown as friendly messages; the UI is interactive via mouse and keyboard (Enter submits the login form).</p>
+
+<h2>3. Design</h2>
+<p><b>Architecture.</b> A layered design keeps the user interface independent of data access:</p>
+<div class="layer">UI – Form1 (login), SignUpForm, DashBoard, MainDash, Inventory/Customer/Employee controls</div><div class="arrow">▼</div>
+<div class="layer">Services – AuthService (login, sign-up, password rules)</div><div class="arrow">▼</div>
+<div class="layer">Repositories – Material, Customer, Employee, User (parameterised SQL)</div><div class="arrow">▼</div>
+<div class="layer">Database – ADO.NET gateway; creates WarehouseDB and tables (Users, Materials, Customers, Employees) on first run</div>
+
+<p><b>Class structure.</b></p>
+<div class="diagram">
+<div class="box abs"><b>«abstract» Entity</b><i>+Id</i><i>+Validate()</i></div>
+<div class="box abs"><b>«abstract» Contact</b><i>Name, Phone, Email, Address</i></div>
+<div class="box"><b>Customer</b><i>Company</i></div>
+<div class="box"><b>Employee</b><i>NIC, Position, Salary, HireDate</i></div>
+<div class="box"><b>Material</b><i>Name, Category, Quantity, UnitPrice, ReorderLevel</i></div>
+<div class="box abs"><b>«abstract» Person</b><i>UserName, FullName, Email</i><i>+Role, +CanManageEmployees</i></div>
+<div class="box"><b>Admin</b><i>Role = Admin; can manage employees</i></div>
+<div class="box"><b>ShippingOperator</b><i>Role = Operator; cannot</i></div>
+<div class="box abs"><b>«interface» IRepository&lt;T&gt;</b><i>Search, Add, Update, Delete, Count</i></div>
+<div class="box abs"><b>«abstract» ManagementControl</b><i>grid, search, buttons, error handling</i></div>
+</div>
+<p style="font-size:9.5pt">Inheritance: Contact and Material and Person derive from Entity; Customer and Employee derive from Contact; Admin and ShippingOperator derive from Person. Material, Customer and Employee repositories implement IRepository&lt;T&gt;. InventoryControl, CustomerControl and EmployeeControl derive from ManagementControl.</p>
+<p><b>Process interaction.</b> Program initialises the database, then loops Login → Dashboard. A screen builds an entity from the form fields; the entity validates itself; the repository runs a parameterised SQL command through Database; any exception is translated and displayed by ManagementControl.</p>
+<p><b>Why appropriate.</b> The template-method base class removed duplicated screen code, so a new module needs only its fields and queries. Polymorphism (Role, CanManageEmployees, IRepository) keeps role logic and data access swappable, and parameterised queries prevent SQL injection. Custom exceptions (ValidationException, AuthenticationException, DataAccessException) separate user mistakes from system faults.</p>
+<p><b>Version control.</b> The project is managed in Git with branches <i>master</i>, <i>Designing</i> (UI design work, merged through a pull request) and a working branch. Commit history shows the progression: project files added, main dashboard built, start position/login layout, database integration, followed by commits for sign-up/login, inventory, customer and employee modules. Committing one feature at a time kept changes small and reversible. The database is created from code on first run (Database.Initialize), so its schema is version-controlled with the source.</p>
+
+<h2>4. Screenshots</h2>
+<div class="ph">[Insert screenshot: Login and Sign Up]</div>
+<div class="ph">[Insert screenshot: Dashboard with statistics]</div>
+<div class="ph">[Insert screenshot: Inventory, Customer and Employee screens]</div>
+<div class="ph">[Insert screenshot: SQL Server tables / database snapshot]</div>
+
+<h2>5. Personal reflection</h2>
+<p>The abstract ManagementControl base class and the repository interface worked well: they kept three screens consistent and made adding validation and error handling a one-place job. Letting the app create its own database removed setup steps and the dependency on an attached .mdf file. Things that went less well were the starter project's missing resource files, which stopped it compiling, and the hard-coded login, which had to be replaced. Hand-coding some layouts instead of using the designer was quicker to write but harder to preview. In the next project I will write unit tests for the validation rules earlier, commit smaller changes more often, and agree the database schema before building the screens.</p>
+
+<h2>6. Future work</h2>
+<p>The application could be extended with stock movement history (goods in/out), customer orders and shipping status, printable and exportable reports, barcode scanning, a change-password and user-management screen, and a language option (the starter already contains a Language button). For sustainability I would move the connection string to a configuration file, add a data-access layer interface so the database can be swapped or mocked, add automated tests and logging, back up the database on a schedule, and publish an installer so updates are easy to deploy.</p>
+
+</body></html>
