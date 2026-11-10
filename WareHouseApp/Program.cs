@@ -1,22 +1,42 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using System.Windows.Forms;
+using WareHouseApp.Data;
 
 namespace WareHouseApp
 {
     static class Program
     {
         /// <summary>
-        /// The main entry point for the application.
+        /// Entry point: prepare the database, then loop Login -> Dashboard until the user exits.
         /// </summary>
         [STAThread]
         static void Main()
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new Form1());
+
+            try
+            {
+                Database.Initialize();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Cannot start", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            while (true)
+            {
+                using (var login = new Form1())
+                {
+                    if (login.ShowDialog() != DialogResult.OK) break;
+                    using (var dash = new DashBoard(login.CurrentUser))
+                    {
+                        dash.ShowDialog();
+                        if (!dash.LoggedOut) break;
+                    }
+                }
+            }
         }
     }
 }
