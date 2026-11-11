@@ -31,33 +31,43 @@ namespace WareHouseApp.Data
             string forced = Environment.GetEnvironmentVariable("WAREHOUSE_DB_SERVER");
             string[] servers = string.IsNullOrWhiteSpace(forced) ? CandidateServers : new[] { forced };
             Exception last = null;
+            var details = new System.Text.StringBuilder();
 
-            foreach (string server in servers)
+            // Two passes: LocalDB can be slow to wake up the first time it is used.
+            for (int attempt = 1; attempt <= 2; attempt++)
             {
-                try
+                foreach (string server in servers)
                 {
-                    string master = Build(server, "master");
-                    using (var con = new SqlConnection(master))
+                    try
                     {
-                        con.Open();
-                        Exec(con, "IF DB_ID('" + DbName + "') IS NULL CREATE DATABASE [" + DbName + "]");
+                        string master = Build(server, "master");
+                        using (var con = new SqlConnection(master))
+                        {
+                            con.Open();
+                            Exec(con, "IF DB_ID('" + DbName + "') IS NULL CREATE DATABASE [" + DbName + "]");
+                        }
+                        connectionString = Build(server, DbName);
+                        ServerInUse = server;
+                        CreateSchema();
+                        return;
                     }
-                    connectionString = Build(server, DbName);
-                    ServerInUse = server;
-                    CreateSchema();
-                    return;
+                    catch (Exception ex)
+                    {
+                        last = ex;
+                        if (attempt == 2) details.AppendLine(server + ": " + ex.Message);
+                    }
                 }
-                catch (Exception ex) { last = ex; }
+                System.Threading.Thread.Sleep(2000);
             }
             throw new DataAccessException(
                 "Could not connect to SQL Server (tried LocalDB and SQLEXPRESS). " +
-                "Install SQL Server Express/LocalDB or set WAREHOUSE_DB_SERVER.", last);
+                "Install SQL Server Express/LocalDB or set WAREHOUSE_DB_SERVER.\n\n" + details, last);
         }
 
         private static string Build(string server, string db)
         {
             return "Data Source=" + server + ";Initial Catalog=" + db +
-                   ";Integrated Security=True;Connect Timeout=15";
+                   ";Integrated Security=True;Connect Timeout=30";
         }
 
         private static void CreateSchema()
