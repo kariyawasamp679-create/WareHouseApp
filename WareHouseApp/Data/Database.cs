@@ -44,7 +44,7 @@ namespace WareHouseApp.Data
                         using (var con = new SqlConnection(master))
                         {
                             con.Open();
-                            Exec(con, "IF DB_ID('" + DbName + "') IS NULL CREATE DATABASE [" + DbName + "]");
+                            CreateDatabaseIfMissing(con, server);
                         }
                         connectionString = Build(server, DbName);
                         ServerInUse = server;
@@ -62,6 +62,36 @@ namespace WareHouseApp.Data
             throw new DataAccessException(
                 "Could not connect to SQL Server (tried LocalDB and SQLEXPRESS). " +
                 "Install SQL Server Express/LocalDB or set WAREHOUSE_DB_SERVER.\n\n" + details, last);
+        }
+
+        /// <summary>
+        /// Creates WarehouseDB if it does not exist. On LocalDB the files are placed in
+        /// %LOCALAPPDATA%\WareHouseApp so they never clash with other files in the user's profile.
+        /// </summary>
+        private static void CreateDatabaseIfMissing(SqlConnection con, string server)
+        {
+            var exists = new SqlCommand("SELECT DB_ID('" + DbName + "')", con).ExecuteScalar();
+            if (exists != null && exists != DBNull.Value) return;
+
+            if (server.StartsWith("(localdb)", StringComparison.OrdinalIgnoreCase))
+            {
+                string dir = System.IO.Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "WareHouseApp");
+                System.IO.Directory.CreateDirectory(dir);
+                string mdf = System.IO.Path.Combine(dir, DbName + ".mdf");
+                string ldf = System.IO.Path.Combine(dir, DbName + "_log.ldf");
+
+                if (System.IO.File.Exists(mdf))
+                    // A database file from an earlier run exists: re-attach it (rebuilding the log if needed).
+                    Exec(con, "CREATE DATABASE [" + DbName + "] ON (FILENAME = N'" + mdf + "') FOR ATTACH_REBUILD_LOG");
+                else
+                    Exec(con, "CREATE DATABASE [" + DbName + "] ON (NAME = N'" + DbName + "', FILENAME = N'" + mdf +
+                              "') LOG ON (NAME = N'" + DbName + "_log', FILENAME = N'" + ldf + "')");
+            }
+            else
+            {
+                Exec(con, "CREATE DATABASE [" + DbName + "]");
+            }
         }
 
         private static string Build(string server, string db)
